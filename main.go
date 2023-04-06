@@ -3,44 +3,32 @@ package main
 import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"lens/controllers"
+	"lens/templates"
 	"lens/views"
-	"log"
 	"net/http"
 )
 
-func executeTemplate(w http.ResponseWriter, filePath string) {
-	tpl, err := views.Parse(filePath)
-	if err != nil {
-		log.Printf("Error execute template: %v", err)
-		http.Error(w, "There was an error parsing the template", http.StatusInternalServerError)
-		return
-	}
-	tpl.Execute(w, nil)
-}
-
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	executeTemplate(w, "templates/home.gohtml")
-}
-
-func contactHandler(w http.ResponseWriter, r *http.Request) {
-	executeTemplate(w, "templates/contact.gohtml")
-}
-
-func faqHandler(w http.ResponseWriter, r *http.Request) {
-	executeTemplate(w, "templates/faq.gohtml")
-}
-
 func main() {
 	r := chi.NewRouter()
-	r.Get("/", homeHandler)
-	r.Get("/contact", contactHandler)
-	r.Get("/faq", faqHandler)
+
+	r.Get("/", controllers.StaticHandler(
+		views.Must(views.ParseFS(templates.FS, "home.gohtml", "tailwind.gohtml"))))
+
+	// parse contact template
+	r.Get("/contact", controllers.StaticHandler(
+		views.Must(views.ParseFS(templates.FS, "contact.gohtml", "tailwind.gohtml"))))
+
+	// parse faq template
+	r.Get("/faq", controllers.FAQ(
+		views.Must(views.ParseFS(templates.FS, "faq.gohtml", "tailwind.gohtml"))))
+
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
 
 	})
 
 	fmt.Println("Starting the server on :3000 port")
-	http.ListenAndServe(":3000", r)
 
+	http.ListenAndServe(":3000", r)
 }
